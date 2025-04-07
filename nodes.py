@@ -29,6 +29,8 @@ import comfy.latent_formats
 from comfy.clip_vision import clip_preprocess, ClipVisionModel
 from comfy.sd import load_lora_for_models
 from comfy.cli_args import args, LatentPreviewMethod
+import hashlib
+
 
 script_directory = os.path.dirname(os.path.abspath(__file__))
 
@@ -51,6 +53,8 @@ def optimized_scale(positive_flat, negative_flat):
     st_star = dot_product / squared_norm
     
     return st_star
+
+
 
 class WanVideoBlockSwap:
     @classmethod
@@ -3030,6 +3034,154 @@ class WanVideoEncode:
  
         return ({"samples": latents, "mask": latent_mask},)
 
+
+
+class GNRIImageToVideoInverterCached:
+    def __init__(self, wan_t2v, vae, num_train_timesteps=1000, device="cuda"):
+        self.wan_t2v = wan_t2v
+        self.device = device
+        self.vae = vae
+        self.model = self.wan_t2v
+        self.scheduler = FlowMatchEulerDiscreteScheduler(
+            num_train_timesteps=num_train_timesteps,  # Use the passed parameter
+            shift=1.0,
+        )
+        self.text_encoder = self.wan_t2v.text_encoder.model
+        self.tokenizer = self.wan_t2v.text_encoder.tokenizer
+        self.cache = {}
+
+    def get_cache_key(self, image, motion_prompt, num_frames, num_inference_steps):
+        image_hash = hashlib.sha256(image.cpu().numpy().tobytes()).hexdigest()
+        param_str = f"{motion_prompt}_{num_frames}_{num_inference_steps}"
+        return f"{image_hash}_{param_str}"
+
+    def invert_image_to_video_latent(self, image, motion_prompt, num_frames=16, num_inference_steps=4, num_iterations=2, lambda_guidance=0.1, eta=1e-6):
+        cache_key = self.get_cache_key(image, motion_prompt, num_frames, num_inference_steps)
+        if cache_key in self.cache:
+            print(f"Using cached latent for key: {cache_key}")
+            return self.cache[cache_key], None
+
+        self.scheduler.set_timesteps(num_inference_steps, device=self.device)
+        timesteps = self.scheduler.timesteps
+        image = image.to(self.device)
+        latent = self.vae.encode([image])[0]
+        static_video_latent = latent.unsqueeze(1).repeat(1, num_frames, 1, 1)
+        encoded_text = self.tokenizer(motion_prompt, padding="max_length", max_length=77, return_tensors="pt")
+        text_ids = encoded_text.input_ids.to(self.device)
+        context = self.text_encoder(text_ids)[0]
+        grid_sizes = torch.tensor([[num_frames, latent.shape[2], latent.shape[3]]], dtype=torch.long, device=self.device)
+        seq_len = self.wan_t2v.config.text_len
+        z_t = static_video_latent.clone().requires_grad_(True)
+
+        pbar = ProgressBar(num_inference_steps)
+        for i, t in enumerate(tqdm(timesteps, desc="GNRI Image-to-Video Inversion")):
+            z_t = self.guided_newton_raphson_inversion(z_t, t, context, grid_sizes, seq_len, num_iterations, lambda_guidance, eta)
+            pbar.update(1)
+
+        self.cache[cache_key] = z_t.detach()
+        print(f"Cached latent for key: {cache_key}")
+        with torch.no_grad():
+            reconstructed_video = self.vae.decode([z_t])[0]
+        return z_t, reconstructed_video
+
+    def guided_newton_raphson_inversion(self, z_t_minus_1, timestep, context, grid_sizes, seq_len, num_iterations=2, lambda_guidance=0.1, eta=1e-6):
+        z_t = z_t_minus_1.clone().requires_grad_(True)
+        scheduler_idx = (self.scheduler.timesteps == timestep).nonzero().item()
+        sigma_t = self.scheduler.sigmas[scheduler_idx].to(z_t.device)
+        sigma_t_minus_1 = self.scheduler.sigmas[scheduler_idx - 1].to(z_t.device) if scheduler_idx > 0 else torch.tensor(0.0).to(z_t.device)
+        D = z_t.numel()
+
+        for _ in range(num_iterations):
+            with torch.enable_grad():
+                model_output = self.forward_model(z_t, timestep, context, grid_sizes, seq_len)
+                f_z_t = z_t_minus_1 + (sigma_t_minus_1 - sigma_t) * model_output
+                residual = z_t - f_z_t
+                residual_norm = torch.norm(residual, p=1)
+                mu_t = z_t_minus_1
+                guidance = torch.norm(z_t - mu_t, p=2)
+                F = residual_norm + lambda_guidance * guidance
+                grad = torch.autograd.grad(F, z_t, create_graph=False)[0]
+            denominator = grad + eta
+            step = (1 / D) * (F / denominator)
+            with torch.no_grad():
+                z_t = z_t - step
+        return z_t.detach()
+
+    def forward_model(self, x, t, context, grid_sizes, seq_len):
+        output = self.model(
+            [x],
+            t.unsqueeze(0),
+            [context],
+            seq_len=seq_len
+        )[0][0]
+        return output
+    
+class WanVideoGNRIImageToVideoCached:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "wan_model": ("WANVIDEOMODEL",),
+                "vae": ("WANVAE",),  # Make VAE a required input
+                "image": ("IMAGE",),
+                "motion_prompt": ("STRING", {"default": "a dynamic scene unfolding", "multiline": True}),
+                "num_frames": ("INT", {"default": 16, "min": 1, "max": 64, "step": 1}),
+                "num_inference_steps": ("INT", {"default": 4, "min": 1, "max": 50, "step": 1}),
+                "num_iterations": ("INT", {"default": 2, "min": 1, "max": 10, "step": 1}),
+                "lambda_guidance": ("FLOAT", {"default": 0.1, "min": 0.0, "max": 1.0, "step": 0.01}),
+            }
+        }
+
+    RETURN_TYPES = ("LATENT", "WANVIDIMAGE_EMBEDS")
+    RETURN_NAMES = ("latent", "image_embeds")
+    FUNCTION = "convert"
+    CATEGORY = "WanVideoWrapper"
+    DESCRIPTION = "Converts an image to a video latent using Guided Newton-Raphson Inversion with caching for faster reuse."
+
+    def __init__(self):
+        self.inverter = None
+
+    def convert(self, wan_model, vae, image, motion_prompt, num_frames, num_inference_steps, num_iterations, lambda_guidance):
+        if image.dim() == 4:
+            image = image[0]
+
+        # Access the underlying WanVideoModel from the ModelPatcher
+        wan_video_model = wan_model.model  # ModelPatcher.model gives the WanVideoModel
+        wan_t2v = wan_video_model.pipeline.get("wan_t2v", wan_video_model)  # Access wan_t2v from the pipeline, fallback to the model itself
+
+        # Initialize or update the inverter with the VAE
+        if self.inverter is None or self.inverter.wan_t2v != wan_t2v or self.inverter.vae != vae:
+            self.inverter = GNRIImageToVideoInverterCached(wan_t2v, vae, device=torch.device("cuda"))
+
+        # Perform the inversion
+        inverted_latent, _ = self.inverter.invert_image_to_video_latent(
+            image, motion_prompt, num_frames, num_inference_steps, num_iterations, lambda_guidance
+        )
+
+        # Calculate dimensions for image_embeds
+        lat_h = inverted_latent.shape[3]  # Height of latent (H/8)
+        lat_w = inverted_latent.shape[4]  # Width of latent (W/8)
+        frames_per_stride = (num_frames - 1) // 4 + 1
+        patches_per_frame = lat_h * lat_w // (2 * 2)  # Assuming patch_size=(1, 2, 2)
+        max_seq_len = frames_per_stride * patches_per_frame
+
+        # Create a minimal image_embeds dictionary
+        image_embeds = {
+            "image_embeds": None,  # Not used in GNRI workflow, but required by WanVideoSampler
+            "clip_context": None,  # No CLIP embeddings in this workflow
+            "negative_clip_context": None,
+            "max_seq_len": max_seq_len,
+            "num_frames": num_frames,
+            "lat_h": lat_h,
+            "lat_w": lat_w,
+            "control_embeds": None,
+            "end_image": None,
+            "fun_model": False,
+            "has_ref": False,
+        }
+
+        return ({"samples": inverted_latent}, image_embeds)
+    
 NODE_CLASS_MAPPINGS = {
     "WanVideoSampler": WanVideoSampler,
     "WanVideoDecode": WanVideoDecode,
@@ -3099,3 +3251,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "WanVideoVACEStartToEndFrame": "WanVideo VACE Start To End Frame",
     "WanVideoVACEModelSelect": "WanVideo VACE Model Select",
     }
+
+NODE_CLASS_MAPPINGS["WanVideoGNRIImageToVideoCached"] = WanVideoGNRIImageToVideoCached
+NODE_DISPLAY_NAME_MAPPINGS["WanVideoGNRIImageToVideoCached"] = "WanVideo GNRI Image to Video (Cached)"

@@ -1,8 +1,8 @@
 {
   "id": "206247b6-9fec-4ed2-8927-e4f388c674d4",
   "revision": 0,
-  "last_node_id": 67,
-  "last_link_id": 83,
+  "last_node_id": 69,
+  "last_link_id": 86,
   "nodes": [
     {
       "id": 46,
@@ -81,7 +81,7 @@
         "Node name for S&R": "CLIPTextEncode"
       },
       "widgets_values": [
-        "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走"
+        "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景三条腿，背景人很多，倒着走"
       ]
     },
     {
@@ -534,7 +534,7 @@
       "bgcolor": "#335"
     },
     {
-      "id": 58,
+      "id": 68,
       "type": "LoadImage",
       "pos": [
         -650.719482421875,
@@ -553,7 +553,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            72
+            84
           ]
         },
         {
@@ -568,96 +568,9 @@
         "Node name for S&R": "LoadImage"
       },
       "widgets_values": [
-        "oldman_upscaled.png",
+        "input_image.png",
         "image",
         ""
-      ],
-      "color": "#2a363b",
-      "bgcolor": "#3f5159"
-    },
-    {
-      "id": 63,
-      "type": "WanVideoImageToVideoEncode",
-      "pos": [
-        304.6556091308594,
-        -129.80532836914062
-      ],
-      "size": [
-        352.79998779296875,
-        338
-      ],
-      "flags": {},
-      "order": 25,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "vae",
-          "type": "WANVAE",
-          "link": 81
-        },
-        {
-          "name": "clip_embeds",
-          "type": "WANVIDIMAGE_CLIPEMBEDS",
-          "link": 82
-        },
-        {
-          "name": "start_image",
-          "shape": 7,
-          "type": "IMAGE",
-          "link": 83
-        },
-        {
-          "name": "end_image",
-          "shape": 7,
-          "type": "IMAGE",
-          "link": null
-        },
-        {
-          "name": "width",
-          "type": "INT",
-          "widget": {
-            "name": "width"
-          },
-          "link": 75
-        },
-        {
-          "name": "height",
-          "type": "INT",
-          "widget": {
-            "name": "height"
-          },
-          "link": 76
-        },
-        {
-          "name": "control_embeds",
-          "shape": 7,
-          "type": "WANVIDIMAGE_EMBEDS",
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "name": "image_embeds",
-          "type": "WANVIDIMAGE_EMBEDS",
-          "links": [
-            66
-          ]
-        }
-      ],
-      "properties": {
-        "cnr_id": "ComfyUI-WanVideoWrapper",
-        "ver": "d9b1f4d1a5aea91d101ae97a54714a5861af3f50",
-        "Node name for S&R": "WanVideoImageToVideoEncode"
-      },
-      "widgets_values": [
-        832,
-        480,
-        81,
-        0.030000000000000006,
-        1,
-        1,
-        true,
-        false
       ],
       "color": "#2a363b",
       "bgcolor": "#3f5159"
@@ -681,9 +594,7 @@
         {
           "name": "CLIP_VISION",
           "type": "CLIP_VISION",
-          "links": [
-            70
-          ]
+          "links": []
         }
       ],
       "properties": {
@@ -740,8 +651,8 @@
         "Node name for S&R": "WanVideoTextEncode"
       },
       "widgets_values": [
-        "an old man is stroking his beard thoughtfully",
-        "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+        "smiling gracefully",
+        "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景三条腿，背景人很多，倒着走",
         true
       ],
       "color": "#332922",
@@ -775,13 +686,13 @@
         {
           "name": "image_embeds",
           "type": "WANVIDIMAGE_EMBEDS",
-          "link": 66
+          "link": 86
         },
         {
           "name": "samples",
           "shape": 7,
           "type": "LATENT",
-          "link": null
+          "link": 85
         },
         {
           "name": "feta_args",
@@ -1105,8 +1016,7 @@
           "type": "WANVAE",
           "slot_index": 0,
           "links": [
-            43,
-            81
+            43
           ]
         }
       ],
@@ -1123,152 +1033,63 @@
       "bgcolor": "#533"
     },
     {
-      "id": 65,
-      "type": "WanVideoClipVisionEncode",
+      "id": 69,
+      "type": "WanVideoGNRIImageToVideoCached",
       "pos": [
-        -176.9497833251953,
-        -167.4617462158203
+        304.6556091308594,
+        -129.80532836914062
       ],
       "size": [
-        327.5999755859375,
-        262
+        352.79998779296875,
+        338
       ],
       "flags": {},
-      "order": 24,
+      "order": 25,
       "mode": 0,
       "inputs": [
         {
-          "name": "clip_vision",
-          "type": "CLIP_VISION",
-          "link": 70
+          "name": "wan_model",
+          "type": "WANVIDEOMODEL",
+          "link": 29
         },
         {
-          "name": "image_1",
+          "name": "image",
           "type": "IMAGE",
-          "link": 73
+          "link": 84
         },
         {
-          "name": "image_2",
-          "shape": 7,
-          "type": "IMAGE",
-          "link": null
-        },
-        {
-          "name": "negative_image",
-          "shape": 7,
-          "type": "IMAGE",
-          "link": null
+          "name": "vae",
+          "type": "WANVAE",
+          "link": 43
         }
       ],
       "outputs": [
         {
-          "name": "image_embeds",
-          "type": "WANVIDIMAGE_CLIPEMBEDS",
+          "name": "latent",
+          "type": "LATENT",
           "links": [
-            82
+            85
+          ]
+        },
+        {
+          "name": "image_embeds",
+          "type": "WANVIDIMAGE_EMBEDS",
+          "links": [
+            86
           ]
         }
       ],
       "properties": {
         "cnr_id": "ComfyUI-WanVideoWrapper",
         "ver": "d9b1f4d1a5aea91d101ae97a54714a5861af3f50",
-        "Node name for S&R": "WanVideoClipVisionEncode"
+        "Node name for S&R": "WanVideoGNRIImageToVideoCached"
       },
       "widgets_values": [
-        1,
-        1,
-        "center",
-        "average",
-        true,
-        0,
-        0.20000000000000004
-      ],
-      "color": "#233",
-      "bgcolor": "#355"
-    },
-    {
-      "id": 66,
-      "type": "ImageResizeKJ",
-      "pos": [
-        -175.95899963378906,
-        176.40057373046875
-      ],
-      "size": [
-        315,
-        266
-      ],
-      "flags": {},
-      "order": 21,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "link": 72
-        },
-        {
-          "name": "get_image_size",
-          "shape": 7,
-          "type": "IMAGE",
-          "link": null
-        },
-        {
-          "name": "width_input",
-          "shape": 7,
-          "type": "INT",
-          "widget": {
-            "name": "width_input"
-          },
-          "link": null
-        },
-        {
-          "name": "height_input",
-          "shape": 7,
-          "type": "INT",
-          "widget": {
-            "name": "height_input"
-          },
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            73,
-            83
-          ]
-        },
-        {
-          "name": "width",
-          "type": "INT",
-          "links": [
-            75
-          ]
-        },
-        {
-          "name": "height",
-          "type": "INT",
-          "links": [
-            76
-          ]
-        }
-      ],
-      "properties": {
-        "cnr_id": "comfyui-kjnodes",
-        "ver": "52c2e31a903fec2dd654fb614ea82ba2757d5028",
-        "Node name for S&R": "ImageResizeKJ"
-      },
-      "widgets_values": [
-        624,
-        624,
-        "lanczos",
-        false,
+        "smiling gracefully",
         16,
-        0,
-        0,
-        "disabled"
+        4,
+        2,
+        0.1
       ]
     }
   ],
@@ -1370,54 +1191,6 @@
       "TEACACHEARGS"
     ],
     [
-      66,
-      63,
-      0,
-      27,
-      2,
-      "WANVIDIMAGE_EMBEDS"
-    ],
-    [
-      70,
-      59,
-      0,
-      65,
-      0,
-      "CLIP_VISION"
-    ],
-    [
-      72,
-      58,
-      0,
-      66,
-      0,
-      "IMAGE"
-    ],
-    [
-      73,
-      66,
-      0,
-      65,
-      1,
-      "IMAGE"
-    ],
-    [
-      75,
-      66,
-      1,
-      63,
-      4,
-      "INT"
-    ],
-    [
-      76,
-      66,
-      2,
-      63,
-      5,
-      "INT"
-    ],
-    [
       79,
       22,
       0,
@@ -1434,28 +1207,28 @@
       "FETAARGS"
     ],
     [
-      81,
-      38,
+      84,
+      68,
       0,
-      63,
-      0,
-      "WANVAE"
-    ],
-    [
-      82,
-      65,
-      0,
-      63,
+      69,
       1,
-      "WANVIDIMAGE_CLIPEMBEDS"
+      "IMAGE"
     ],
     [
-      83,
-      66,
+      85,
+      69,
       0,
-      63,
+      27,
+      3,
+      "LATENT"
+    ],
+    [
+      86,
+      69,
+      1,
+      27,
       2,
-      "IMAGE"
+      "WANVIDIMAGE_EMBEDS"
     ]
   ],
   "groups": [
